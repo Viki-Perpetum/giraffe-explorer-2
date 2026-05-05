@@ -9,6 +9,7 @@ import AuthPage from "@/pages/AuthPage";
 import NoAccess from "@/pages/NoAccess";
 import NotFound from "./pages/NotFound";
 import { MFAChallenge } from "@/components/auth/MFAChallenge";
+import GiraffeExplorer from "@/pages/giraffe-explorer-2/Index";
 // CLAUDE_INSERT_IMPORTS
 
 const queryClient = new QueryClient();
@@ -52,6 +53,7 @@ function ProtectedRoutes() {
   return (
     <Routes>
       <Route element={<MainLayout />}>
+        <Route index element={<GiraffeExplorer />} />
         {/* CLAUDE_INSERT_ROUTES */}
       </Route>
       <Route path="*" element={<NotFound />} />
