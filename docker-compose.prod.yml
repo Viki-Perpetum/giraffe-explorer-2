@@ -1,0 +1,34 @@
+# Production overrides — use with: docker compose -f docker-compose.yml -f docker-compose.prod.yml up
+version: "3.8"
+
+services:
+  # Disable Supabase Studio in production
+  studio:
+    profiles:
+      - dev
+
+  # Remove debug port bindings from the database
+  db:
+    ports: []
+    restart: always
+
+  # Kong API gateway — production settings
+  kong:
+    restart: always
+    environment:
+      KONG_LOG_LEVEL: warn
+
+  # Auth service — tighten rate limits
+  auth:
+    restart: always
+    environment:
+      GOTRUE_RATE_LIMIT_EMAIL_SENT: "10"
+      GOTRUE_MAILER_AUTOCONFIRM: "false"
+
+  # REST & Realtime — restart on failure
+  rest:
+    restart: always
+  realtime:
+    restart: always
+  storage:
+    restart: always

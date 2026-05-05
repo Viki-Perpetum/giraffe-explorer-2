@@ -1,0 +1,69 @@
+name: Deploy to GitHub Pages
+
+# Builds the Vite app and publishes dist/ to GitHub Pages so each
+# prototype is reachable as a real URL at:
+#   https://<owner-lowercase>.github.io/<repo-name>/
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Generation pushes 3+ commits in rapid succession (template files, route
+# patch, etc.). With cancel-in-progress:true, GitHub sometimes cancels the
+# LAST run instead of the first — so the deploy that wins is the empty
+# initial state. With `false`, queued runs complete in order; intermediate
+# ones may cancel, but the last commit's deploy is what gets published.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        # Not using --frozen-lockfile: prototypes are throwaway, and the
+        # template's bun.lockb often drifts from package.json between updates.
+        run: bun install
+
+      - name: Build with subpath base + placeholder envs
+        env:
+          BASE_PATH: /${{ github.event.repository.name }}/
+          # Tells AuthProvider to skip the Supabase login flow and render
+          # with a synthetic admin user — prototypes have no real backend.
+          VITE_PROTOTYPE_MODE: "true"
+          # Prototypes are static UI demos; these placeholders satisfy
+          # `import.meta.env` reads without exposing real backends.
+          VITE_SUPABASE_URL: http://localhost:8000
+          VITE_SUPABASE_PUBLISHABLE_KEY: anon
+          VITE_AZURE_CLIENT_ID: 00000000-0000-0000-0000-000000000000
+          VITE_AZURE_TENANT_ID: 00000000-0000-0000-0000-000000000000
+          VITE_AZURE_REDIRECT_URI: http://localhost
+          VITE_PROTOTYPE_API_URL: http://localhost:3100
+        run: bun run build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,54 @@
+# ╔══════════════════════════════════════════════════════════════╗
+# ║  COPY THIS FILE to .github/workflows/ in every app repo    ║
+# ║  that uses @perpetum/core.                                  ║
+# ║                                                             ║
+# ║  It receives the update trigger from perpetum-template      ║
+# ║  and creates a PR to bump the package version.              ║
+# ╚══════════════════════════════════════════════════════════════╝
+
+name: Update @perpetum/core
+
+on:
+  repository_dispatch:
+    types: [perpetum-core-updated]
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@perpetum"
+
+      - name: Update @perpetum/core
+        run: |
+          npm install @perpetum/core@latest
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore: update @perpetum/core to ${{ github.event.client_payload.version }}"
+          title: "Update @perpetum/core to ${{ github.event.client_payload.version }}"
+          body: |
+            Automated update triggered by [perpetum-template](https://github.com/Viki-Perpetum/perpetum-template).
+
+            ## What changed
+            The shared PerPetum core (auth, layout, design system) was updated.
+            See [template commits](https://github.com/Viki-Perpetum/perpetum-template/commits/main) for details.
+
+            ## Test plan
+            - [ ] `npm run build` passes
+            - [ ] Login/SSO still works
+            - [ ] Layout renders correctly
+          branch: chore/update-perpetum-core
+          delete-branch: true

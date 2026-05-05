@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find \"\\\\\\\\wsl.localhost\\\\Ubuntu-24.04\\\\home\\\\viki\\\\perpetum-template\\\\src\" -type f)",
+      "Bash(ls -la \"\\\\\\\\wsl.localhost\\\\Ubuntu-24.04\\\\home\\\\viki\\\\perpetum-template\\\\src\")",
+      "Bash(find \"\\\\\\\\wsl.localhost\\\\Ubuntu-24.04\\\\home\\\\viki\\\\perpetum-template\\\\src\" -type f \\\\\\( -name \"*.tsx\" -o -name \"*.ts\" -o -name \"*.css\" -o -name \"*.jpg\" \\\\\\))"
+    ]
+  }
+}

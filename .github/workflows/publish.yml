@@ -1,0 +1,74 @@
+name: Publish @perpetum/core
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/components/**"
+      - "src/hooks/**"
+      - "src/lib/**"
+      - "src/integrations/**"
+      - "src/authConfig.ts"
+      - "src/index.css"
+      - "src/core/**"
+
+jobs:
+  publish:
+    # Only the template repo publishes the @perpetum/core package.
+    # Generated prototype repos inherit this workflow but must skip it.
+    if: github.event.repository.is_template
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@perpetum"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build library
+        run: npx tsup
+
+      - name: Auto-bump patch version
+        run: |
+          CURRENT=$(node -p "require('./package.json').version")
+          npm version patch --no-git-tag-version
+          NEW=$(node -p "require('./package.json').version")
+          echo "VERSION=$NEW" >> $GITHUB_ENV
+          echo "Bumped $CURRENT → $NEW"
+
+      - name: Publish to GitHub Packages
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  sync-apps:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    strategy:
+      matrix:
+        repo:
+          - Viki-Perpetum/perpetum-datainsights-v1.3
+          # Voeg hier nieuwe apps toe:
+          # - Viki-Perpetum/nis2-access-matrix
+          # - Viki-Perpetum/new-app-name
+
+    steps:
+      - name: Trigger update in dependent app
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.SYNC_PAT }}
+          repository: ${{ matrix.repo }}
+          event-type: perpetum-core-updated
+          client-payload: '{"version": "${{ env.VERSION }}"}'
